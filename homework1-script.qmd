@@ -291,7 +291,7 @@ seq_lengths <- sapply(seq_info, function(x) {
   if (x$isHappy) {
     return(length(x$sequence))
   } else {
-    return(NA)  # unhappy number 不参与排名
+    return(NA)  # unhappy number
   }
 })
 

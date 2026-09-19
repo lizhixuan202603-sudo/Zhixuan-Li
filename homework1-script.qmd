@@ -1,7 +1,9 @@
 ---
 title: "homework1"
 author: "Zhixuan Li"
-format: pdf
+format: 
+  html:
+    embed-resources: true
 editor: visual
 ---
 

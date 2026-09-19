@@ -1,0 +1,307 @@
+---
+title: "homework1"
+author: "Zhixuan Li"
+format: typst
+editor: visual
+---
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
+
+This is the link to a repo: https://github.com/lizhixuan202603-sudo/repository-for-homework-1
+
+
+#Q1: #a
+
+```{r}
+hw1data <- read.csv("/Users/li-zhixuan/Desktop/R-script in Umich/draft for homework/forty+soybean+cultivars+from+subsequent+harvests/data.csv")
+```
+
+```{r}
+head(hw1data)
+```
+
+#b
+
+```{r}
+# 1. Verify that there are 320 observations in the dataset
+nrow(hw1data)
+
+# 2. 40 distinct cultivars
+length(unique(hw1data$Cultivar))
+
+# 3. all the observations were collected from two seasons
+table(hw1data$Season)
+```
+
+#c
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+#1. correlation between plant height (PH) and grain yield (GY)
+cor(hw1data$PH, hw1data$GY)
+```
+
+```{r}
+#2. the correlation between PH and GY separately for each season
+tapply(hw1data$PH, hw1data$Season, function(x) cor(x, hw1data$GY[hw1data$Season == hw1data$Season[1]]))
+
+hw1data %>%
+  group_by(Season) %>%
+  summarise(correlation = cor(PH, GY))
+
+#season 1 has the higher correlation
+```
+
+```{r}
+#3. the grain yield of the soybean observation with the greatest plant height
+hw1data$GY[which.max(hw1data$PH)]
+```
+
+```{r}
+#4. percentage of observations that a thousand seed weight (MHG) greater than the overall average thousand seed weight
+mean_mhg <- mean(hw1data$MHG, na.rm = TRUE)
+mean(hw1data$MHG > mean_mhg, na.rm = TRUE) * 100
+```
+
+```{r}
+#5. which cultivar has the highest average grain yield
+hw1data %>%
+  group_by(Cultivar) %>%
+  summarise(avg_GY = mean(GY, na.rm = TRUE)) %>%
+  arrange(desc(avg_GY)) %>%
+  slice(1)
+
+```
+
+#d
+
+```{r}
+# Calculate the overall and seasonal averages
+
+# 1. season
+season_means <- hw1data %>%
+  group_by(Season) %>%
+  summarise(across(c(PH, IFP, NLP, NGP, NGL, NS, MHG, GY), \(x) mean(x, na.rm = TRUE))) %>%
+  mutate(Season = as.character(Season))
+
+# 2. overall
+overall_means <- hw1data %>%
+  summarise(across(c(PH, IFP, NLP, NGP, NGL, NS, MHG, GY), \(x) mean(x, na.rm = TRUE))) %>%
+  mutate(Season = "Overall")
+
+# 3. combine
+bind_rows(season_means, overall_means)
+
+```
+
+#e
+
+```{r}
+t.test(GY ~ Season, data = hw1data)
+
+```
+
+#Q2 #a
+
+```{r}
+url <- "https://archive.ics.uci.edu/ml/machine-learning-databases/adult/adult.data"
+
+```
+
+#b
+
+```{r}
+#clean and simplify
+adult <- read.csv(url, header = FALSE, stringsAsFactors = FALSE)
+
+colnames(adult) <- c(
+  "age", "workclass", "fnlwgt", "education", "education_num",
+  "marital_status", "occupation", "relationship", "race", "sex",
+  "capital_gain", "capital_loss", "hours_per_week", "native_country", "income"
+)
+
+head(adult)
+str(adult)
+
+```
+
+```{r}
+#checking names
+names(adult)
+```
+
+#c
+
+```{r}
+adult[adult == " ?"] <- NA
+
+missing_count <- colSums(is.na(adult))
+missing_count
+```
+
+#d
+
+```{r}
+n_before <- nrow(adult)
+n_before
+
+# working 10 hours per week
+adult1 <- adult[adult$hours_per_week >= 10, ]
+
+# sample after 
+n_after <- nrow(adult1)
+n_after
+```
+
+#e
+
+```{r}
+adult2 <- adult1[!is.na(adult1$occupation) & !is.na(adult1$workclass) & !is.na(adult1$native_country), ]
+
+# comfirm sample
+nrow(adult2)
+
+#Occupation, workclass, and native_comountry are categorical variables, and missing values cannot be reasonably filled with means or medians.
+
+#Deleting can avoid errors or deviations caused by missing values during modeling.
+```
+
+#f
+
+```{r}
+# Eliminate any observations with: age less than 18, age greater than 90
+adult3 <- adult2[adult2$age >= 18 & adult2$age <= 90, ]
+
+# Eliminate any observations with education level identified as Preschool.
+adult4 <- adult3[adult3$education != "Preschool", ]
+```
+
+#g
+
+```{r}
+#final sample
+n_final <- nrow(adult4)
+n_final
+```
+
+#Q3 #a
+
+```{r}
+nextHappy <- function(n){
+  if(!is.numeric(n) || length(n) != 1 || is.na(n)){
+    stop("Input must be a single numeric value.")
+  }
+  if(n != as.integer(n)){
+    stop("Input must be an integer.")
+  }
+  if(n <= 0){
+    stop("Input must be a positive integer.")
+  }
+  
+  digits <- as.integer(strsplit(as.character(n), "")[[1]])
+  
+  return(sum(digits^2))
+}
+nextHappy(19)   # 1^2 + 9^2 = 1 + 81 = 82
+nextHappy(82)   # 8^2 + 2^2 = 64 + 4 = 68
+```
+
+#b
+
+```{r}
+happySequence <- function(n) {
+  # input
+  if (!is.numeric(n) || length(n) != 1 || is.na(n)) {
+    stop("Input must be a single numeric value.")
+  }
+  if (n != as.integer(n)) {
+    stop("Input must be an integer.")
+  }
+  if (n <= 0) {
+    stop("Input must be a positive integer.")
+  }
+  
+  seq_vals <- c(n)   # store
+  seen <- c(n)       # test circle
+  
+  if (n == 1) {
+    return(list(sequence = 1, isHappy = TRUE))
+  }
+  
+  repeat {
+    next_val <- nextHappy(seq_vals[length(seq_vals)])
+    seq_vals <- c(seq_vals, next_val)
+    
+    if (next_val == 1) {
+      return(list(sequence = seq_vals, isHappy = TRUE))
+    }
+    
+    # circle
+    if (next_val %in% seen) {
+      return(list(sequence = seq_vals, isHappy = FALSE))
+    }
+    
+    seen <- c(seen, next_val)
+  }
+}
+
+happySequence(19)
+happySequence(4)
+```
+
+#c. Among integers 1 through 1000:
+
+```{r}
+results <- sapply(1:1000, function(x) happySequence(x)$isHappy)
+seq_info <- lapply(1:1000, function(x) happySequence(x))
+# How many are happy?
+num_happy <- sum(results)
+cat("happy numbers between 1 and 1000 is", num_happy, "\n")
+
+# What percentage are happy?
+pct_happy <- mean(results) * 100
+cat("Percentage of happy numbers is", round(pct_happy, 2), "%\n")
+
+# What starting value produces the longest happy sequence before terminating?
+seq_lengths <- sapply(seq_info, function(x) {
+  if (x$isHappy) {
+    return(length(x$sequence))
+  } else {
+    return(NA)  # unhappy number 不参与排名
+  }
+})
+
+max_length <- max(seq_lengths, na.rm = TRUE)
+start_with_max <- which(seq_lengths == max_length)
+
+cat("Maximum happy sequence length before terminating:", max_length, "\n")
+cat("Starting value(s) with the longest happy sequence:", start_with_max, "\n")
+```
+
+
+
+
+
+
